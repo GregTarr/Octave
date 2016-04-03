@@ -1,0 +1,52 @@
+%%============= Randomly select rows from a dataset to make train, cross validate and test  ========================================
+clear ; close all; clc
+
+load ('ex5data1.mat');
+y=[y;yval;ytest];
+x = [X; Xval; Xtest];
+
+
+m = size(x, 1);
+m = ones(length(x), 1);
+lambda = 3;
+p = 8;% number of polynomial features
+
+ % Map X onto Polynomial Features and Normalize
+ X_poly = polyFeatures(x, p);
+ [X_poly, mu, sigma] = featureNormalize(X_poly);  % Normalize
+ X_poly = [ones(size(X_poly, 1), 1), X_poly];                   % Add Ones
+
+ yXpoly = [y, X_poly]; %now all the data is in one matrix and the X matrix is normalised
+
+for i = 1:500;
+  nrows = size(m,1);
+  nrand = length(m); % Choose all variables, 60% will be training
+  rand_rows = randperm(nrows, nrand);
+  yX_poly_rand = yXpoly(rand_rows,:);  % Select the random rows from x
+
+a = length (1:roundb(0.6*length(m)));
+b = length (1:roundb(0.2*length(m)));
+  yX_poly_rand_train = (yX_poly_rand(1:a,:)); %first i to 0.6*length(m)*i
+  yX_poly_rand_val = (yX_poly_rand(a+1:a+b,:)); %train+1 i to train+0.2*length(m)*i
+  yX_poly_rand_test = (yX_poly_rand((a+b+1):length(m),:));   
+  
+  y_rand_train = yX_poly_rand_train(:,1);
+  X_poly_rand_train = yX_poly_rand_train (:, 2:(size(yX_poly_rand_train,2)));
+  y_rand_val = yX_poly_rand_val(:,1);
+  X_poly_rand_val = yX_poly_rand_val (:, 2:(size(yX_poly_rand_val,2)));
+  y_rand_test = yX_poly_rand_test(:,1);
+  X_poly_rand_test = yX_poly_rand_test (:, 2:(size(yX_poly_rand_test,2)));
+  
+  theta = trainLinearReg(X_poly_rand_train, y_rand_train, lambda);
+  error_train(i)  = linearRegCostFunction(X_poly_rand_train, y_rand_train, theta, 0);  
+  error_val(i)    = linearRegCostFunction(X_poly_rand_val, y_rand_val, theta, 0);
+  error_test(i)    = linearRegCostFunction(X_poly_rand_test, y_rand_test, theta, 0);
+end
+
+fprintf('Train Error\tValidation Error\tTest Error\n');
+for i = 1:500;
+	fprintf(' %f\t%f\t%f\n', ...
+            error_train(i), error_val(i), error_test(i));
+end
+fprintf('Program paused. Press enter to continue.\n');
+pause;
